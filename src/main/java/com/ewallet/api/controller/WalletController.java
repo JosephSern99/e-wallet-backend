@@ -1,18 +1,17 @@
 package com.ewallet.api.controller;
 
-import com.ewallet.api.dto.request.DepositRequest;
-import com.ewallet.api.dto.request.TransferRequest;
-import com.ewallet.api.dto.request.WithdrawRequest;
+import com.ewallet.api.dto.request.TransactionRequest;
 import com.ewallet.api.dto.response.ApiResponse;
 import com.ewallet.api.dto.response.TransactionResponse;
 import com.ewallet.api.dto.response.WalletResponse;
+import com.ewallet.api.events.TransactionEventPublisher;
 import com.ewallet.api.model.Transaction;
 import com.ewallet.api.model.User;
 import com.ewallet.api.model.Wallet;
+import com.ewallet.api.service.TransactionService;
 import com.ewallet.api.service.UserService;
 import com.ewallet.api.service.WalletService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -32,10 +31,18 @@ public class WalletController {
     private final WalletService walletService;
 
     @Autowired
+    private final TransactionService transactionService;
+
+    @Autowired
+    private final TransactionEventPublisher eventPublisher;
+
+    @Autowired
     private final UserService userService;
 
-    public WalletController(WalletService walletService, UserService userService) {
+    public WalletController(WalletService walletService, TransactionService transactionService, TransactionEventPublisher eventPublisher, UserService userService) {
         this.walletService = walletService;
+        this.transactionService = transactionService;
+        this.eventPublisher = eventPublisher;
         this.userService = userService;
     }
 
@@ -67,31 +74,33 @@ public class WalletController {
 
     @PostMapping("/wallet/deposit")
     public ResponseEntity<ApiResponse> deposit(
-            @Valid @RequestBody DepositRequest request,
+            @RequestBody TransactionRequest request,
             Authentication authentication) {
 
         User user = userService.getUserByUsername(authentication.getName());
-        Wallet wallet = walletService.getWalletByUser(user);
+        TransactionResponse wallet = transactionService.createDeposit(request);
         log.debug("Wallet: {}", wallet);
         log.debug("Amount: {}", request.getAmount());
-        Transaction transaction = walletService.deposit(wallet, request.getAmount());
+
+        if(wallet != null) {
+            eventPublisher.publishTransactionUpdatedEvent(wallet);
+        }
 
         return ResponseEntity.ok(new ApiResponse(
                 true,
                 "Deposit successful",
-                transaction.getTransactionReference()
+                wallet.getTransactionReference()
         ));
     }
 
     @PostMapping("/wallet/withdraw")
     public ResponseEntity<ApiResponse> withdraw(
-            @Valid @RequestBody WithdrawRequest request,
+            @Valid @RequestBody TransactionRequest request,
             Authentication authentication) {
 
         User user = userService.getUserByUsername(authentication.getName());
-        Wallet wallet = walletService.getWalletByUser(user);
 
-        Transaction transaction = walletService.withdraw(wallet, request.getAmount());
+        TransactionResponse transaction = transactionService.createWithdrawal(request);
 
         return ResponseEntity.ok(new ApiResponse(
                 true,
@@ -102,13 +111,12 @@ public class WalletController {
 
     @PostMapping("/wallet/transfer")
     public ResponseEntity<ApiResponse> transfer(
-            @Valid @RequestBody TransferRequest request,
+            @Valid @RequestBody TransactionRequest request,
             Authentication authentication) {
 
         User user = userService.getUserByUsername(authentication.getName());
-        Wallet wallet = walletService.getWalletByUser(user);
 
-        Transaction transaction = walletService.transfer(wallet, request.getRecipientWalletNumber(), request.getAmount());
+        TransactionResponse transaction = transactionService.createTransfer(request);
 
         return ResponseEntity.ok(new ApiResponse(
                 true,

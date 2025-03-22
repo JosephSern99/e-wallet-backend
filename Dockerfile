@@ -1,9 +1,19 @@
-FROM eclipse-temurin:17-jre
+FROM openjdk:21 AS build
+WORKDIR /workspace/app
 
-WORKDIR /app
+# Copy Maven wrapper and pom.xml
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+COPY src src
 
-COPY target/e-wallet-api-0.0.1-SNAPSHOT.jar app.jar
+# Make the Maven wrapper executable
+RUN chmod +x ./mvnw
+# Build the application
+RUN ./mvnw install -DskipTests
 
-EXPOSE 8085
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Create a slim runtime image
+FROM eclipse-temurin:17-jre-alpine
+VOLUME /tmp
+COPY --from=build /workspace/app/target/*.jar app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]

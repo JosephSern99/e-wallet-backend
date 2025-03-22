@@ -1,10 +1,7 @@
 package com.ewallet.api.model;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -13,6 +10,8 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
+@Getter
+@Setter
 @Table(name = "wallets")
 public class Wallet extends BaseEntity{
     @Column(nullable = false, unique = true)

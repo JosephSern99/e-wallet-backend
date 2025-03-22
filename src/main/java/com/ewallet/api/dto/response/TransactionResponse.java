@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class TransactionResponse {
+    private String id;
     private String transactionReference;
     private String type;
     private BigDecimal amount;
@@ -18,8 +19,11 @@ public class TransactionResponse {
     private String recipientWalletNumber;
     private String status;
     private LocalDateTime createdAt;
+    private Long categoryId;
+    private String categoryName;
 
-    public TransactionResponse(String transactionReference, String type, BigDecimal amount, String description, String recipientWalletNumber, String status, LocalDateTime createdAt) {
+
+    public TransactionResponse(String transactionReference, String type, BigDecimal amount, String description, String recipientWalletNumber, String status, LocalDateTime createdAt, Long categoryId, String categoryName) {
         this.transactionReference = transactionReference;
         this.type = type;
         this.amount = amount;
@@ -27,6 +31,8 @@ public class TransactionResponse {
         this.recipientWalletNumber = recipientWalletNumber;
         this.status = status;
         this.createdAt = createdAt;
+        this.categoryId = categoryId;
+        this.categoryName = categoryName;
     }
 
     public TransactionResponse() {}

@@ -20,6 +20,10 @@ public class Transaction extends BaseEntity {
     @Column(nullable = false)
     private TransactionType type;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private TransactionCategory category;
+
     @Column(nullable = false)
     private BigDecimal amount;
 
