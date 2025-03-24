@@ -1,6 +1,7 @@
 package com.ewallet.api.controller;
 
 import com.ewallet.api.dto.request.TransactionRequest;
+import com.ewallet.api.dto.request.WalletRequest;
 import com.ewallet.api.dto.response.ApiResponse;
 import com.ewallet.api.dto.response.TransactionResponse;
 import com.ewallet.api.dto.response.WalletResponse;
@@ -48,12 +49,13 @@ public class WalletController {
 
     @PostMapping("wallet/create")
     public ResponseEntity<WalletResponse> createWallet(Authentication authentication) {
+
         User user = userService.getUserByUsername(authentication.getName());
-        walletService.createWallet(user);
+        var wallet  = walletService.createWallet(user);
 
         WalletResponse response = new WalletResponse();
-        response.setWalletNumber("W123456");
-        response.setBalance(BigDecimal.valueOf(100));
+        response.setWalletNumber(wallet.getWalletNumber());
+        response.setBalance(wallet.getBalance());
         response.setOwnerName(user.getFullName());
 
         return ResponseEntity.ok(response);
@@ -74,38 +76,37 @@ public class WalletController {
 
     @PostMapping("/wallet/deposit")
     public ResponseEntity<ApiResponse> deposit(
-            @RequestBody TransactionRequest request,
-            Authentication authentication) {
+            @RequestBody TransactionRequest request) {
 
-        User user = userService.getUserByUsername(authentication.getName());
-        TransactionResponse wallet = transactionService.createDeposit(request);
-        log.debug("Wallet: {}", wallet);
+        TransactionResponse response = transactionService.createDeposit(request);
+        log.debug("Wallet: {}", response);
         log.debug("Amount: {}", request.getAmount());
 
-        if(wallet != null) {
-            eventPublisher.publishTransactionUpdatedEvent(wallet);
+        if(response != null) {
+            eventPublisher.publishTransactionUpdatedEvent(response);
         }
 
         return ResponseEntity.ok(new ApiResponse(
                 true,
                 "Deposit successful",
-                wallet.getTransactionReference()
+                response.getTransactionReference()
         ));
     }
 
     @PostMapping("/wallet/withdraw")
     public ResponseEntity<ApiResponse> withdraw(
-            @Valid @RequestBody TransactionRequest request,
-            Authentication authentication) {
+            @Valid @RequestBody TransactionRequest request) {
 
-        User user = userService.getUserByUsername(authentication.getName());
+        TransactionResponse response = transactionService.createWithdrawal(request);
 
-        TransactionResponse transaction = transactionService.createWithdrawal(request);
+        if(response != null) {
+            eventPublisher.publishTransactionUpdatedEvent(response);
+        }
 
         return ResponseEntity.ok(new ApiResponse(
                 true,
                 "Withdrawal successful",
-                transaction.getTransactionReference()
+                response.getTransactionReference()
         ));
     }
 
@@ -114,14 +115,12 @@ public class WalletController {
             @Valid @RequestBody TransactionRequest request,
             Authentication authentication) {
 
-        User user = userService.getUserByUsername(authentication.getName());
-
-        TransactionResponse transaction = transactionService.createTransfer(request);
+        TransactionResponse response = transactionService.createTransfer(request);
 
         return ResponseEntity.ok(new ApiResponse(
                 true,
                 "Transfer successful",
-                transaction.getTransactionReference()
+                response.getTransactionReference()
         ));
     }
 

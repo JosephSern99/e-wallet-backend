@@ -1,6 +1,8 @@
 package com.ewallet.api.events;
 
 import com.ewallet.api.dto.response.TransactionResponse;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -65,8 +67,11 @@ public class TransactionEventPublisher {
     }
 
     // Inner class for transaction events
+    @JsonAutoDetect
     public static class TransactionEvent {
+
         private String eventType;
+
         private TransactionResponse transaction;
 
         public TransactionEvent() {}

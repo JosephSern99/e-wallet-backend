@@ -8,6 +8,7 @@ import com.ewallet.api.exception.ResourceNotFoundException;
 import com.ewallet.api.model.Transaction;
 import com.ewallet.api.model.TransactionCategory;
 import com.ewallet.api.model.Wallet;
+import com.ewallet.api.model.enums.TransactionStatus;
 import com.ewallet.api.repository.TransactionCategoryRepository;
 import com.ewallet.api.repository.TransactionRepository;
 import com.ewallet.api.repository.WalletRepository;
@@ -32,16 +33,19 @@ public class TransactionService {
     private final TransactionCategoryRepository categoryRepository;
     private final TransactionEventPublisher eventPublisher;
 
+    private final WalletService walletService;
+
     @Autowired
     public TransactionService(
             TransactionRepository transactionRepository,
             WalletRepository walletRepository,
             TransactionCategoryRepository categoryRepository,
-            TransactionEventPublisher eventPublisher) {
+            TransactionEventPublisher eventPublisher, WalletService walletService) {
         this.transactionRepository = transactionRepository;
         this.walletRepository = walletRepository;
         this.categoryRepository = categoryRepository;
         this.eventPublisher = eventPublisher;
+        this.walletService = walletService;
     }
 
     public List<TransactionResponse> getAllTransactions() {
@@ -78,12 +82,9 @@ public class TransactionService {
         transactionDto.setType(TRANSFER);
 
         // Validate recipient wallet exists
-        if (transactionDto.getWalletId() == null) {
+        if (transactionDto.getRecipientWalletNumber() == null) {
             throw new IllegalArgumentException("Recipient wallet ID is required for transfers");
         }
-
-        walletRepository.findById(transactionDto.getWalletId())
-                .orElseThrow(() -> new ResourceNotFoundException("Recipient wallet not found"));
 
         return createTransaction(transactionDto);
     }
@@ -123,6 +124,8 @@ public class TransactionService {
         transaction.setCreatedAt(LocalDateTime.now());
         transaction.setWallet(wallet);
         transaction.setCategory(category);
+        transaction.setStatus(TransactionStatus.COMPLETED);
+        transaction.setTransactionReference(walletService.generateTransactionReference());
 
         // Update wallet balance
         wallet.setBalance(wallet.getBalance().add(transaction.getAmount()));
@@ -154,6 +157,8 @@ public class TransactionService {
         transaction.setCreatedAt(LocalDateTime.now());
         transaction.setWallet(wallet);
         transaction.setCategory(category);
+        transaction.setStatus(TransactionStatus.COMPLETED);
+        transaction.setTransactionReference(walletService.generateTransactionReference());
 
         // Update wallet balance
         wallet.setBalance(wallet.getBalance().subtract(transaction.getAmount()));
@@ -178,7 +183,7 @@ public class TransactionService {
         }
 
         // Load recipient wallet
-        Wallet recipientWallet = walletRepository.findById(transactionDto.getWalletId())
+        Wallet recipientWallet = walletRepository.findByWalletNumber(transactionDto.getRecipientWalletNumber())
                 .orElseThrow(() -> new ResourceNotFoundException("Recipient wallet not found"));
 
         // Create transaction
@@ -190,6 +195,8 @@ public class TransactionService {
         transaction.setWallet(sourceWallet);
         transaction.setRecipientWalletNumber(String.valueOf(recipientWallet));
         transaction.setCategory(category);
+        transaction.setStatus(TransactionStatus.COMPLETED);
+        transaction.setTransactionReference(walletService.generateTransactionReference());
 
         // Update source wallet balance
         sourceWallet.setBalance(sourceWallet.getBalance().subtract(transaction.getAmount()));

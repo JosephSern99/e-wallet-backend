@@ -1,5 +1,6 @@
 package com.ewallet.api.service;
 
+import com.ewallet.api.dto.request.WalletRequest;
 import com.ewallet.api.exception.InsufficientBalanceException;
 import com.ewallet.api.exception.ResourceNotFoundException;
 import com.ewallet.api.model.Transaction;

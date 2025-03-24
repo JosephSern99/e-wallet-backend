@@ -16,4 +16,5 @@ public class TransactionRequest {
     private String description;
     private TransactionType type;
     private Long categoryId;
+    private String recipientWalletNumber;
 }
